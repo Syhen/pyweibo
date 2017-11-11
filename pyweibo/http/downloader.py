@@ -63,10 +63,6 @@ class Downloader(object):
             options['cookies'] = cookies
         # if cookies:
         #     options['cookies'] = cookies
-        print url
-        print headers
-        print options
-        print '#' * 60
         response = requests.request(method=method, url=url, **options)
         # self.cookie_dict.update(cookie_format(response.cookies, type='dict'))
         # if self.cookies:
