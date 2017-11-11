@@ -55,10 +55,11 @@ def login(username, password):
     if success:
         redirect_response = weibo_downloader.download(redirect_url)
         user_info = parse_login_callback_info(redirect_response)
-        weibo_downloader.download('https://passport.weibo.com/wbsso/login?ticket=ST-MjY2MjAxODIzNA%3D%3D-1510300911-tc-62CF1136648EC5199B815F76C9C175C1-1&ssosavestate=1541836911&callback=sinaSSOController.doCrossDomainCallBack&scriptId=ssoscript0&client=ssologin.js(v1.4.19)&_=1510300910788')
-        response = weibo_downloader.download('https://passport.krcom.cn/sso/crossdomain?service=krvideo&savestate=1&ticket=ST-MjY2MjAxODIzNA%3D%3D-1510300911-tc-5ABD1C0FC8EE3B4695A9DD4E0C47CC96-1&ssosavestate=1541836911&callback=sinaSSOController.doCrossDomainCallBack&scriptId=ssoscript2&client=ssologin.js(v1.4.19)&_=1510300910790')
+        cookies = cookie_format(response.cookies, 'dict')
+        response = weibo_downloader.download(API['SAVE_STATE'], cookies=cookies)
         logger.info("login success")
-        return cookie_format(response.cookies, 'dict'), success, user_info
+        cookies.update(cookie_format(response.cookies, 'dict'))
+        return cookies, success, user_info
     else:
         reason = get_msg_from_url(unquote(redirect_url), key='reason')
         logger.info("login failure because: {reason}".format(reason=reason))
