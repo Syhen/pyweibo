@@ -14,7 +14,8 @@ API = dict(
     LOGIN='http://login.sina.com.cn/sso/login.php?client=ssologin.js({version})'.format(version=VERSION),
     USER_HOME='http://weibo.com/{user_id}/profile?'
               'is_search=0&visible=0&is_all=1&is_tag=0&profile_ftype=1&page={page}#feedtop',
-    USER_PAGE='https://weibo.com/u/{user_id}?is_search=0&visible=0&is_all=1&is_tag=0&profile_ftype=1&page={page}#feedtop'
+    USER_PAGE='https://weibo.com/u/{user_id}?is_search=0&visible=0&is_all=1&is_tag=0&profile_ftype=1&page={page}#feedtop',
+    SAVE_STATE='https://passport.weibo.com/wbsso/login?ssosavestate=1541913546&url=https%3A%2F%2Fweibo.com%2Fajaxlogin.php%3Fframelogin%3D1%26callback%3Dparent.sinaSSOController.feedBackUrlCallBack%26sudaref%3Dweibo.com&display=0&ticket=ST-MjY2MjAxODIzNA==-1510377546-tc-3A7F3857F50B6BA0E05778DD3B4397E2-1&retcode=0'
 )
 
 FORMDATA = dict(
