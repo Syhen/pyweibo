@@ -18,8 +18,6 @@ class WeiboMainPageParser(object):
         self.is_login = is_login
 
     def parse(self, content):
-        with open('/Users/heyao/Desktop/weibo.html', 'w') as f:
-            f.write(content)
         return content
 
     def _parse(self, content):
@@ -43,8 +41,6 @@ class WeiboInfoParser(object):
         pass
 
     def content2weibo(self, content, forward=True, response_url=None):
-        with open('/Users/heyao/Desktop/weibo.html', 'w') as f:
-            f.write(content)
         sel = Selector(text=content)
         weibos = sel.xpath(XPATH_CONTENT2WEIBO)
         for weibo in weibos:
@@ -55,6 +51,7 @@ class WeiboInfoParser(object):
         follow_url = sel.xpath(XPATH_UP_ID).extract()[0]
         user_action_id = follow_url.split('/')[4]
         return user_action_id
+
     # url_info_url = 'https://weibo.com/p/{user_id}/info?mod=pedit_more'.format(user_id=user_id)
 
     def weibo_basic_info(self, content=None, sel=None):
@@ -64,20 +61,46 @@ class WeiboInfoParser(object):
         result['follow'] = int(counter.xpath(XPATH_BI_FOLLOW)[0])
         result['fans'] = int(counter.xpath(XPATH_BI_FANS)[0])
         result['weibo'] = int(counter.xpath(XPATH_BI_WEIBO)[0])
+
+        def info_collector(xpath, container, is_list=True):
+            data = {}
+            for key in xpath:
+                try:
+                    if is_list:
+                        value = container.xpath(xpath[key])[0].strip()
+                    else:
+                        value = container.xpath(xpath[key]).strip().replace('\n', '').replace('\r', '').replace('\t', '')
+                except IndexError:
+                    value = ''
+                if value:
+                    data[key.lower()] = value
+            return data
+
         container = sel.xpath(XPATH_BI_CONTAINER).extract()[0]
-        result['nick_name'] = container.xpath(XPATH_BI_NICKNAME)[0]
-        result['address'] = container.xpath(XPATH_BI_ADDRESS)[0]
-        result['sex'] = container.xpath(XPATH_BI_SEX)[0]
-        result['birth_day'] = container.xpath(XPATH_BI_BIRTH)[0]
-        result['introduce'] = container.xpath(XPATH_BI_INTRO)[0]
-        result['created_at'] = container.xpath(XPATH_BI_CREATED_AT)[0]
-        result['email'] = container.xpath(XPATH_BI_EMAIL)[0]
-        result['qq'] = container.xpath(XPATH_BI_QQ)[0]
-        result['high_school'] = container.xpath(XPATH_BI_HIGH_SCHOOL)[0]
-        result['tags'] = '|'.join(t.strip() for t in container.xpath(XPATH_BI_TAG))
+        result['basic_info'] = info_collector(XPATH_BASIC_INFO, container)
+        domain = '|'.join(container.xpath(XPATH_BI_DOMAIN))
+        if domain:
+            result['basic_info']['domain'] = domain
+
+        contact_info_container = sel.xpath(XPATH_CI_CONTAINER).extract()[0]
+        result['contact_info'] = info_collector(XPATH_CONTACT_INFO, contact_info_container)
+
+        work_info_container = sel.xpath(XPATH_WI_CONTAINER).extract()[0]
+        result['work_info'] = ['|'.join(i.strip() for i in c.xpath('.//text()') if i.strip()) for c in work_info_container.xpath(XPATH_COMPANY)][1:]
+
+        education_info_container = sel.xpath(XPATH_EI_CONTAINER).extract()[0]
+        result['education_info'] = info_collector(XPATH_EDUCATION_INFO, education_info_container, is_list=False)
+
+        tag_info_container = sel.xpath(XPATH_TI_CONTAINER).extract()[0]
+        result['tags'] = '|'.join(t.strip() for t in tag_info_container.xpath(XPATH_TI_TAG) if t.strip())
         result['level'] = container.xpath(XPATH_BI_LEVEL)[0]
-        result['exp'] = container.xpath(XPATH_BI_EXP)[0]
+        result['exp'] = int(container.xpath(XPATH_BI_EXP)[0])
         return result
+
+    def weibo_up_baike_info(self, content=None, sel=None):
+        sel = sel or Selector(text=content)
+        school = sel.xpath(u'//li[@class="li_2 clearfix" and contains(., "毕业院校")]/span[last()]/text()').extract_first()
+        return school
 
     def _url_type(self, content):
         if content.startswith('#') and content.endswith('#'):
@@ -147,8 +170,8 @@ if __name__ == '__main__':
         'http://weibo.com/1995246233/profile?is_search=0&visible=0&is_all=1&is_tag=0&profile_ftype=1&page=1',
         cookies=cookies)
     content = response.text
-    with open('/Users/heyao/Desktop/weibo.html', 'w') as f:
-        f.write(content)
+    # with open('/Users/heyao/Desktop/weibo.html', 'w') as f:
+    #     f.write(content)
     print u'他还没有发过微博' in content
     main_content = main_page_parser.parse(content)
 
@@ -157,10 +180,23 @@ if __name__ == '__main__':
     for weibo in weibos:
         print weibo
 
-    user_action_id = weibo_info_parser.weibo_user_action_id(content)
+    print cookies
+    # user_action_id = weibo_info_parser.weibo_user_action_id(content)
+    user_action_id = '1005052662018234'
     url_info_url = 'https://weibo.com/p/{user_id}/info?mod=pedit_more'.format(user_id=user_action_id)
     ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36'
-    response = weibo_downloader.download(url_info_url, cookies=cookies, ua=ua)
+    response = weibo_downloader.download(url_info_url, cookies={'SUB': cookies['SUB']})
     print response.url
+    with open('C:\Users\Shen\Desktop\weibo.html', 'w') as f:
+        f.write(response.body)
     weibo_basic_info = weibo_info_parser.weibo_basic_info(response.body)
     print weibo_basic_info
+
+    url = 'https://weibo.com/lixiaolu?refer_flag=1001030101_&is_hot=1'
+    response = weibo_downloader.download(url)
+    sel = Selector(text=response.body)
+    next_url = 'https:' + sel.xpath(u'//span[@class="item_text W_fl" and contains(., "百度人物资料")]/a/@href').extract_first()
+    response = weibo_downloader.download(next_url)
+    content = response.body
+    weibo_baike_info = weibo_info_parser.weibo_up_baike_info(content=content)
+    print weibo_baike_info
